@@ -1,0 +1,277 @@
+-- A FEW IMPORTANT NOTES--
+-- You may need to remove the dashes from the first section if your applications don't activate correctly on their own.
+-- This Applescript is meant to be personalized. Take a minute to scroll through and look for ALL CAPS to replace info
+-- This script uses voice, "Oliver" (British male), so feel free to change that
+-- Mail section checks for a Gmail account, change if needed
+-- Calendars section ommits specific calendars, check out the 'whose name is not' section to insert your omitted calendars
+-- The iMessage section I left inactive because it relies on an installation not everyone has already. Look into it.
+
+--activate application "Mail"
+--activate application "Calendar"
+--activate application "Contacts"
+--activate application "iTunes"
+--set volume output volume 12
+--output volume of (get volume settings)
+
+--this is the city code. Search the code for your city on http://weather.yahoo.com/
+set CityCode to YOURCITYCODEHERE
+--temperature format
+set t_format to "F"
+--voiceover format
+set v_format to "S"
+--say present condition
+set a_format to "Y"
+
+set IURL to "http://xml.weather.yahoo.com/forecastrss?p=ZIPCODE&u=c" & CityCode
+
+--downloading the file using curl
+set file_content to (do shell script "curl " & IURL)
+--looking for the line with actual condition
+set theText to text ((offset of "yweather:condition" in file_content) + 1) thru -1 of file_content
+set sub_1 to text ((offset of "\"" in theText) + 1) thru -1 of theText
+
+--today conditions found
+set actual_condition to text 1 thru ((offset of "\"" in sub_1) - 1) of sub_1
+
+--looking for actual temperature temperature
+set sub_1a to text ((offset of "temp=" in sub_1)) thru -1 of sub_1
+set sub_1b to text ((offset of "\"" in sub_1a) + 1) thru -1 of sub_1a
+set actual_temp to text 1 thru ((offset of "\"" in sub_1b) - 1) of sub_1b
+
+if t_format is equal to "C" then
+	set actual_temp to (5 / 9) * (actual_temp - 32) as integer
+end if
+
+--looking for today forecast
+set theText to text ((offset of "yweather:forecast" in file_content) + 1) thru -1 of file_content
+set sub_2 to text ((offset of "\"" in theText) + 1) thru -1 of theText
+
+--maximum and minimum temperatures found
+set today_min_temp to word 9 of sub_2
+set today_max_temp to word 12 of sub_2
+if t_format is equal to "C" then
+	set today_min_temp to (5 / 9) * (today_min_temp - 32) as integer
+	set today_max_temp to (5 / 9) * (today_max_temp - 32) as integer
+end if
+
+--looking for today forecast condition (a bit tricky)
+set sub_3 to text ((offset of "text" in sub_2) + 1) thru -1 of sub_2
+set sub_4 to text ((offset of "\"" in sub_3) + 1) thru -1 of sub_3
+set today_forecast to text 1 thru ((offset of "\"" in sub_4) - 1) of sub_4
+
+--looking for tomorrow forecast
+set sub_5 to text ((offset of "yweather:forecast" in sub_4) + 1) thru -1 of sub_4
+set sub_6 to text ((offset of "\"" in sub_5) + 1) thru -1 of sub_5
+
+--maximum and minimum temperatures found
+set tomorrow_min_temp to word 9 of sub_6
+set tomorrow_max_temp to word 12 of sub_6
+if t_format is equal to "C" then
+	set tomorrow_min_temp to (5 / 9) * (tomorrow_min_temp - 32) as integer
+	set tomorrow_max_temp to (5 / 9) * (tomorrow_max_temp - 32) as integer
+end if
+
+--looking for tomorrow forecast condition (a bit tricky)
+set sub_7 to text ((offset of "text" in sub_6) + 1) thru -1 of sub_6
+set sub_8 to text ((offset of "\"" in sub_7) + 1) thru -1 of sub_7
+set tomorrow_forecast to text 1 thru ((offset of "\"" in sub_8) - 1) of sub_8
+
+--iTunes Alarm if you have a track to use, be sure to replace this info
+tell application "iTunes"
+	set sound volume to 85
+	set EQ enabled to true
+	play track 1 of user playlist "ALARM-PLAYLIST"
+end tell
+delay 1
+
+--VoiceOver Section
+--create greeting
+set todaysdate to current date
+set dateStr to date string of (todaysdate)
+set currentHour to hours of (current date)
+if currentHour is less than 12 then
+	say "Good Morning."
+else if currentHour is less than 17 then
+	say "Good Afternoon."
+else
+	say "Good Evening."
+end if
+set myTime to time string of (current date)
+set myParts to words of myTime
+set mySpeak to (item 1 of myParts) & " " & (item 2 of myParts) & " "
+say "It's " & mySpeak using "Oliver"
+if dateStr contains "YOUR-BIRTHDAY-HERE" then
+	say ".
+" & "Happy Birthday Sir!"
+end if
+if a_format is equal to "Y" then
+	say "The weather outside is, " & actual_condition & ", and " & actual_temp & " degrees " using "Oliver"
+	say "My scans for today indicate it will be " & today_forecast using "Oliver"
+end if
+
+--MAIL
+tell application "Mail"
+	set allAccounts to account "Gmail"
+	set newEmailMessages to 0
+	repeat with eachAccount in allAccounts
+		set unreadMessages to (get every message of mailbox "INBOX" of account "Gmail" whose read status is false)
+		
+		set numberofmessages to (count of (every message of mailbox "INBOX" of account "Gmail" whose read status is false))
+		set newEmailMessages to newEmailMessages + numberofmessages
+		-- uncomment following script if you desire to have every email read to you
+		if (count of (every message of mailbox "INBOX" of account "Gmail" whose read status is false)) is 1 then
+			tell application "Mail"
+				say "" & "There is only " & numberofmessages & " new email in your " & "Gmail" & " Account"
+				repeat with eachMessage in unreadMessages
+					delay 1
+					say "" & "From "
+					say "" & (get sender of eachMessage)
+					say "" & "Subject"
+					say "" & (get subject of eachMessage)
+					set read status of eachMessage to true
+				end repeat
+			end tell
+		else if (count of (every message of mailbox "INBOX" of account "Gmail" whose read status is false)) is greater than 1 then
+			tell application "Mail"
+				--say "" & "There are " & numberofmessages & " new messages in your " & "Gmail" & " Account"
+				--repeat with eachMessage in unreadMessages
+				--delay 1
+				--say "" & "From "
+				--say "" & (get sender of eachMessage)
+				--say "" & "Subject."
+				--say "" & (get subject of eachMessage)
+				--set read status of eachMessage to true
+				--end repeat
+			end tell
+		else
+			say "" & "There are no new email messages in your " & "Gmail" & " Account"
+		end if
+	end repeat
+	if newEmailMessages is 1 then
+		say "" & "There is only " & newEmailMessages & " new email in your Inbox"
+	else if newEmailMessages is greater than 1 then
+		
+		say "" & "There are " & newEmailMessages & " new email messages in your Inbox"
+	else
+		say "" & "There are no new email messages in your Inbox"
+	end if
+end tell --end of mail
+
+--iMessage
+--set theoutput to do shell script "sqlite3 -list APPLICATION-SUPPORT-FILEPATH-HERE
+--set the paragraph_list to every paragraph of theoutput
+--set newMessages to 0
+--repeat with i from 1 to the count of paragraphs of theoutput
+--set this_paragraph to item i of the paragraph_list
+--set AppleScript's text item delimiters to "|"
+--set appidstring to text item 1 of this_paragraph
+--if appidstring is equal to "YOUR-APPLEID" then
+--set newMessages to newMessages + 1
+--end if
+--end repeat
+--if newMessages is 1 then
+--say "" & "You have only " & newMessages & " new chat message"
+--else if newMessages is greater than 1 then
+--say "" & "You have " & newMessages & " new chat messages"
+--else
+--say "" & "You have no new chat messages"
+--end if
+
+--Calendar
+set {year:y, month:m, day:d} to todaysdate
+set str to (m as string) & " " & (d as string) & " " & (y as string)
+set today to date str
+set tomorrow to today + 60 * 60 * 24
+log today & tomorrow
+tell application "Calendar"
+	set allCalendar to every calendar whose name is not "CALENDARS-YOU-DONT-WANT-READ-HERE-IN-QUOTES"
+	set eventsNumber to 0
+	repeat with eachCalendar in allCalendar
+		set curr to (every event whose start date is greater than or equal to today and start date is less than tomorrow) of eachCalendar
+		set eventsNumber to eventsNumber + (count curr)
+		repeat with eachCurr in curr
+			if (allday event of eachCurr) then
+				say "" & "Today is " & summary of eachCurr
+			else
+				set eventDate to start date of eachCurr
+				set eventTime to time string of eventDate
+				say "" & "Today you have " & summary of eachCurr & " at " & eventTime
+			end if
+		end repeat
+	end repeat
+	if eventsNumber is 0 then
+		say "" & "There is nothing on the calendar for today"
+	end if
+end tell
+--tell application "Calendar" to quit
+
+--Contacts
+tell application "Contacts"
+	set allContacts to every person whose (birth date is not missing value)
+	repeat with eachContact in allContacts
+		set {month:bdayM, day:bdayD} to birth date of eachContact
+		if bdayM is equal to m and bdayD is equal to d then
+			set firstName to first name of eachContact
+			set lastName to last name of eachContact
+			say "" & "Today is " & firstName & " " & lastName & "'s birthday"
+		end if
+	end repeat
+end tell
+tell application "Contacts" to quit
+
+--Reading Mail
+tell application "Mail"
+	set numberofmessages to (count of (every message of mailbox "INBOX" of account "Gmail" whose read status is false))
+	set unreadMessages to (get every message of mailbox "INBOX" of account "Gmail" whose read status is false)
+	if (count of (every message of mailbox "INBOX" of account "Gmail" whose read status is false)) is less than 5 then
+		say "Would you like me to read your messages sir?"
+		tell application "SpeechRecognitionServer"
+			set heardPhrase to listen for {"Yes", "Sure", "Yeah", "No", "No thanks"}
+			if heardPhrase is "Yes" then
+				tell application "Mail"
+					say "" & "There are " & numberofmessages & " new messages in your " & "Gmail" & " Account"
+					repeat with eachMessage in unreadMessages
+						delay 1
+						say "" & "From "
+						say "" & (get sender of eachMessage)
+						say "" & "Subject."
+						say "" & (get subject of eachMessage)
+						set read status of eachMessage to true
+					end repeat
+					say "That is all for now sir."
+				end tell
+			else if heardPhrase is "Sure" then
+				tell application "Mail"
+					say "" & "There are " & numberofmessages & " new messages in your " & "Gmail" & " Account"
+					repeat with eachMessage in unreadMessages
+						delay 1
+						say "" & "From "
+						say "" & (get sender of eachMessage)
+						say "" & "Subject."
+						say "" & (get subject of eachMessage)
+						set read status of eachMessage to true
+					end repeat
+					say "That is all for now sir."
+				end tell
+			else if heardPhrase is "Yeah" then
+				tell application "Mail"
+					say "" & "There are " & numberofmessages & " new messages in your " & "Gmail" & " Account"
+					repeat with eachMessage in unreadMessages
+						delay 1
+						say "" & "From "
+						say "" & (get sender of eachMessage)
+						say "" & "Subject."
+						say "" & (get subject of eachMessage)
+						set read status of eachMessage to true
+					end repeat
+					say "That is all for now sir."
+				end tell
+			else
+				say "Very well sir. That is all for now."
+			end if
+		end tell
+	else
+		say "That is all for now sir."
+	end if
+	
+end tell
