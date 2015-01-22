@@ -1,0 +1,35 @@
+say "I'm sorry to hear you're not feeling well sir. What may I do for you?"
+
+tell application "SpeechRecognitionServer"
+	set myResponse to {listen for "Play music", "Log data", "Netflix", "Watch a movie"}
+end tell
+if myResponse is "Play Music" then
+	set musicScript to ((Users / brandonolson / documents / scripts) & "Music.scpt")
+	run script musicScript
+end if
+if myResponse is "Log data" then
+	set logScript to ((Users / brandonolson / documents / scripts) & "Data.scpt")
+	run script logScript
+end if
+if myReponse is "Netflix" then
+	tell application "Safari"
+		tell window 1
+			set current tab to (make new tab with properties {URL:"http://www.netflix.com/WiHome"})
+			activate
+		end tell
+	end tell
+end if
+if myResponse is "Watch a movie" then
+	tell application "Safari"
+		tell window 1
+			set current tab to (make new tab with properties {URL:"http://plex.tv/web/app#!/server/c5715380b1302c4693450f2cef34eb4933e4427a/section/2"})
+			activate
+		end tell
+	end tell
+	tell application "Calendar"
+		tell calendar "Gmail"
+			set theDate to current date
+			make new event at end with properties {summary:"Began Sickness", start date:theDate, allday event:true}
+		end tell
+	end tell
+end if
