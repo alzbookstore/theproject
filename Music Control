@@ -1,0 +1,32 @@
+tell application "iTunes"
+	set myList to (get name of every track of playlist 1) as list
+	set myFinishedList to myList & "Cancel"
+end tell
+tell application "SpeechRecognitionServer"
+	set myTrack to (listen for myFinishedList with prompt myFinishedList)
+end tell
+if myTrack is not "Cancel" then
+	tell application "iTunes"
+		set myTrackList to (get every track of playlist 1 where name is myTrack)
+		if number of items of myTrackList is 1 then
+			play (get first item of myTrackList)
+		else
+			set myArtistNames to {"Cancel"} & (get artist of every track of playlist 1 where name is myTrack)
+			tell application "SpeechRecognitionServer"
+				set myArtist to (listen for myArtistNames with prompt myArtistNames)
+			end tell
+			if myArtist is not "Cancel" then
+				set myFocusedTrackList to (get every track of playlist 1 where name is myTrack and artist is myArtist)
+				set randnum to (random number ((number of items of myFocusedTrackList) - 1)) + 1
+				play (get item randnum of myTrackList)
+			end if
+			set randnum to ((random number (numitems - 1)) + 1)
+			play (get item randnum of myTrackList)
+		end if
+		say "Playing" & myTrack
+	end tell
+else
+	if myTrack is "Cancel" then
+		say "Very well, sir."
+	end if
+end if
