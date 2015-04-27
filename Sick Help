@@ -22,7 +22,7 @@ end if
 if myResponse is "Watch a movie" then
 	tell application "Safari"
 		tell window 1
-			set current tab to (make new tab with properties {URL:"http://plex.tv/web/app#!/server/c5715380b1302c4693450f2cef34eb4933e4427a/section/2"})
+			set current tab to (make new tab with properties {URL:"http://plex.tv/web/app#!/server/YOURPLEXPATHHERE/section/2"})
 			activate
 		end tell
 	end tell
